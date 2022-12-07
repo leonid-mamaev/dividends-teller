@@ -1,0 +1,9 @@
+venv
+.DS_Store
+.idea
+*.iml
+.terraform*
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
+variables.tf
