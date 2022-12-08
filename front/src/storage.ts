@@ -33,3 +33,14 @@ export function deleteDiv(ticker: string) {
     })
     localStorage.tickers = JSON.stringify(divs);
 }
+
+
+export function updateDivCount(ticker: string, count: number) {
+    let divs = getDividends()
+    let div = divs.filter((value) => {
+        return value.ticker === ticker
+    })[0]
+    div.amount = count
+    deleteDiv(ticker)
+    addDividend(div)
+}

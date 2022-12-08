@@ -2,8 +2,7 @@ venv
 .DS_Store
 .idea
 *.iml
-.terraform*
-terraform.tfstate
-terraform.tfstate.backup
-.terraform.lock.hcl
+*terraform*
 variables.tf
+lambda_package
+*.zip

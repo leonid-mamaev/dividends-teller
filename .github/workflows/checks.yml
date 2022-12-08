@@ -1,0 +1,26 @@
+name: checks
+on: push
+jobs:
+  check-typings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: pip install mypy
+      - run: cd backend && mypy src --install-types --non-interactive
+
+  check-code-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: pip install black
+      - run: cd backend && black src --diff --check
+
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: pip install coverage
+      - run: |
+          cd backend
+          POLYGON_API_KEY=${{ secrets.POLYGON_API_KEY }} coverage run -m unittest tests/test_lambda.py
+          coverage report

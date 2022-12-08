@@ -60,8 +60,8 @@ resource "aws_s3_object" "divs-teller" {
 # Backend.
 data "archive_file" "divs-teller-lambda" {
   type = "zip"
-  source_dir = "./backend/src/package/"
-  output_path = "./backend/src/divs_teller.zip"
+  source_dir = "./lambda_package/"
+  output_path = "./divs_teller.zip"
 }
 
 resource "aws_s3_bucket" "divs-teller-lambda" {

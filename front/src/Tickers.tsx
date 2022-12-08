@@ -1,17 +1,23 @@
 import { useState } from "react";
 import { AddTicker } from "./AddTicker"
 import { DeleteTicker } from "./DeleteTicker";
-import {getDividends, Dividend} from "./storage";
+import {getDividends, Dividend, updateDivCount} from "./storage";
 import {DividendsSummary} from "./DividendsSummary";
 import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { RefreshTicker } from "./RefreshTicker";
-import {get_yield} from "./calculate";
+import {get_dividend_yearly_yield} from "./calculate";
+import {DividendsCount} from "./DividendsCount";
 
 export function Tickers() {
     const [tickers, setTickers] = useState(getDividends)
 
     function refresh() {
         setTickers(getDividends())
+    }
+
+    function updateAmount(ticker: string, newAmount: string) {
+        updateDivCount(ticker, parseInt(newAmount))
+        refresh()
     }
 
     return (
@@ -41,10 +47,12 @@ export function Tickers() {
                                     <img alt="logo" width="25px" src={"logos/" + item.ticker.toLowerCase() + ".png" }/>
                                     {item.name} ({item.ticker})
                                 </TableCell>
-                                <TableCell>{item.amount}</TableCell>
+                                <TableCell>
+                                    <DividendsCount value={item.amount.toString()} onUpdate={(newValue) => updateAmount(item.ticker, newValue)} />
+                                </TableCell>
                                 <TableCell>{item.close_price}</TableCell>
                                 <TableCell>{item.cash_amount.toFixed(2)}</TableCell>
-                                <TableCell>{(get_yield(item)).toFixed(2)}%</TableCell>
+                                <TableCell>{(get_dividend_yearly_yield(item)).toFixed(2)}%</TableCell>
                                 <TableCell>{(item.amount * item.cash_amount).toFixed(2)}</TableCell>
                                 <TableCell>{item.currency}</TableCell>
                                 <TableCell>{item.frequency}</TableCell>

@@ -1,2 +1,4 @@
-src/package
-*.zip
+.coverage
+*.png
+__pycache__
+.mypy_cache
