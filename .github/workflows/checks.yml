@@ -6,21 +6,39 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: pip install mypy
-      - run: cd backend && mypy src --install-types --non-interactive
+      - run: cd backend && mypy src --install-types --non-interactive --ignore-missing-imports
 
   check-code-formatting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: pip install black
-      - run: cd backend && black src --diff --check
+      - run: black backend --diff --check --line-length 120
+
+  check-styling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-styling
+      - run: pip install pycodestyle flake8 flake8-builtins flake8-print pep8-naming flake8-unused-arguments flake8-implicit-str-concat flake8-new-union-types
+      - run: flake8 backend --max-line-length=120 --max-complexity 10
 
   run-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: pip install coverage
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-tests
+      - run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install coverage responses
       - run: |
           cd backend
           POLYGON_API_KEY=${{ secrets.POLYGON_API_KEY }} coverage run -m unittest tests/test_lambda.py
-          coverage report
+          coverage report --fail-under=80  src/*.py

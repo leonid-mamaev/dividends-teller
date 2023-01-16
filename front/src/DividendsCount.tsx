@@ -2,30 +2,30 @@ import {useState} from "react";
 
 
 interface Props {
-    value: string
+    defaultAmount: string
     onUpdate: (newValue: string) => void
 }
 
-export function DividendsCount({value, onUpdate}: Props) {
+export function DividendsCount({defaultAmount, onUpdate}: Props) {
     const [isBeingUpdated, setIsBeingUpdated] = useState(false)
-    const [newValue, setNewValue] = useState(value)
+    const [amount, setAmount] = useState(defaultAmount)
 
     const handleUpdate = () => {
         setIsBeingUpdated(false)
-        if (value === newValue) {
+        if (defaultAmount === amount) {
             return
         }
-        onUpdate(newValue)
+        onUpdate(amount)
     }
 
     return (
         <div>
             {!isBeingUpdated &&
-                <div onClick={() => {setIsBeingUpdated(true)}}>{value}</div>
+                <div onClick={() => {setIsBeingUpdated(true)}}>{defaultAmount}</div>
             }
             {isBeingUpdated &&
                 <div>
-                    <input type="textfield" value={newValue} onChange={e => setNewValue(e.target.value)} />
+                    <input type="textfield" value={amount} onChange={e => setAmount(e.target.value)} />
                     <input type="button" onClick={handleUpdate} />
                 </div>
             }

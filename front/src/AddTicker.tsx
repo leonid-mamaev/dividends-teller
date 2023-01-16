@@ -1,29 +1,21 @@
-import {useState} from "react";
+import {FormEvent, useRef} from "react";
 import {addDividend} from "./storage";
+import {api_get_ticker} from "./api";
 
-const initialFormData = Object.freeze({
-    ticker: "",
-    amount: "0"
-});
 
 interface AddTickerProps {
     onAdd: () => void
 }
 
 export function AddTicker({onAdd}: AddTickerProps) {
-    const [formData, updateFormData] = useState(initialFormData);
+    const tickerRef = useRef<HTMLInputElement>(null)
+    const amountRef = useRef<HTMLInputElement>(null)
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        updateFormData({
-            ...formData,
-            [e.target.name]: e.target.value.trim()
-        });
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLInputElement>) => {
+    const onSubmit = (e: FormEvent) => {
         e.preventDefault()
-        const url = process.env.REACT_APP_TICKER_URL + "/hello?ticker=" + formData.ticker
-        fetch(url)
+        const ticker = tickerRef.current!.value
+        const amount = amountRef.current!.value
+        api_get_ticker(ticker)
             .then((response) => {
                 if (response.ok) {
                     return response.json()
@@ -31,29 +23,30 @@ export function AddTicker({onAdd}: AddTickerProps) {
                 throw new Error('Something went wrong')
             })
             .then((data) => {
-                const ticker = {
-                    ticker: formData.ticker,
+                const dividend = {
+                    ticker: ticker,
                     name: data.name,
                     close_price: data.close_price,
-                    amount: parseFloat(formData.amount),
+                    amount: parseFloat(amount),
                     cash_amount: data.cash_amount,
                     currency: data.currency,
                     frequency: data.frequency,
                     pay_date: data.pay_date
                 }
-                addDividend(ticker)
+                addDividend(dividend)
                 onAdd()
             })
             .catch((error) => {
-                console.log(error)
+                alert(error)
+                console.error(error)
             })
     };
 
     return (
-        <div>
-            <input name='ticker' placeholder='Ticker' type='text' onChange={handleChange} />
-            <input name='amount' placeholder='Amount' type='text' onChange={handleChange} />
-            <input type='button' value='Add Ticker' onClick={handleSubmit} />
-        </div>
+        <form onSubmit={onSubmit}>
+            <input placeholder='Ticker' type='text' ref={tickerRef} />
+            <input placeholder='Amount' type='text' ref={amountRef} />
+            <button type='submit'>Submit</button>
+        </form>
     )
 }

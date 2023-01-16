@@ -1,0 +1,9 @@
+export async function api_get_ticker(ticker: string) {
+    const url = process.env.REACT_APP_TICKER_URL + "/divs?ticker=" + ticker
+    return fetch(url, {
+        method: "GET",
+        headers: {
+            "Authorization": "Bearer eyJraWQiOiJWWVB4QjM3dXp6VXd5MTF1bUM5YktWS2h4ZUN1K2lsTU9zMUtnY0Q3Z2k0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJmOThmMzE2ZS1mMzQxLTQyNmYtYjdiYS04MWQ3NjQyZWQ0NTAiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9aN1M2T3M3UWIiLCJjbGllbnRfaWQiOiJiZDFkNjFhOTlxMm9qajVtYnE2aGw2Nmh1Iiwib3JpZ2luX2p0aSI6ImUwYjEwZmRlLTA1MWEtNGFmMi1iZGNjLThmOGI2NTY4ZDFjNyIsImV2ZW50X2lkIjoiOTdmZmUyNWEtNDM2ZS00MjczLTg1NjMtN2NiZDgyNGE0MWE5IiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJhd3MuY29nbml0by5zaWduaW4udXNlci5hZG1pbiIsImF1dGhfdGltZSI6MTY3MzQ2NDQ3NywiZXhwIjoxNjczNDY4MDc3LCJpYXQiOjE2NzM0NjQ0NzcsImp0aSI6IjZiMTViOTNmLTZjZjktNGQ1Mi05YTY4LTk4YzYzNmM0NmYwMiIsInVzZXJuYW1lIjoiZjk4ZjMxNmUtZjM0MS00MjZmLWI3YmEtODFkNzY0MmVkNDUwIn0.ANLL9ivXbcPzKywCLIAG0z_0ocRfKx3EEVM05A-Zst88SSwVYlf9kXZuSIP8wEqDNpd7pERM5fazyYC6brUS7ohbxLWinEhS_qi8jD4rwSlnfN7ANRkkl_onj7sYbiJcw3LzVdGUNI97dY5-Z-MHPzBL8fcHktTnWb1MLSv-UaZ7By5JX5KqWF5Otj68vbYtfjELAjOlDI3cjIftqj7uxbOiMpR29xNdB4fcsQ3QTCql88dVK6v-SyC3A4D1XtowaUs_5WHHZX7E29mxy0Q1kf_TvVlKrr-DWDpkJ9vIMK0wCY5SloqpaVLvnqXLdKfzHAhKQ-x_u5eyCTOsYYfqiA"
+        }
+    })
+}

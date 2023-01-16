@@ -1,0 +1,5 @@
+*terraform*
+secrets.tf
+*.zip
+lambda_package
+frontend_build

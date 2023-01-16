@@ -48,7 +48,7 @@ export function Tickers() {
                                     {item.name} ({item.ticker})
                                 </TableCell>
                                 <TableCell>
-                                    <DividendsCount value={item.amount.toString()} onUpdate={(newValue) => updateAmount(item.ticker, newValue)} />
+                                    <DividendsCount defaultAmount={item.amount.toString()} onUpdate={(newValue) => updateAmount(item.ticker, newValue)} />
                                 </TableCell>
                                 <TableCell>{item.close_price}</TableCell>
                                 <TableCell>{item.cash_amount.toFixed(2)}</TableCell>

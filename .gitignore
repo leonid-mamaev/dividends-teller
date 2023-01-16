@@ -2,7 +2,3 @@ venv
 .DS_Store
 .idea
 *.iml
-*terraform*
-variables.tf
-lambda_package
-*.zip

@@ -1,6 +1,7 @@
 import {addDividend, deleteDiv} from "./storage";
 import IconButton from '@mui/material/IconButton';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import {api_get_ticker} from "./api";
 
 interface Props {
     ticker: string
@@ -11,8 +12,7 @@ interface Props {
 export function RefreshTicker({onRefresh, ticker, amount}: Props) {
 
     const handleClick = () => {
-        const url = process.env.REACT_APP_TICKER_URL + "/hello?ticker=" + ticker
-        fetch(url)
+        api_get_ticker(ticker)
             .then(response => response.json())
             .then((data) => {
                 const div = {
