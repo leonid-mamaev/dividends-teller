@@ -1,27 +1,42 @@
-data "archive_file" "lambda-archive" {
-  type = "zip"
-  source_dir = "./lambda_package/"
-  output_path = "./divs_teller.zip"
+resource "aws_ecr_repository" "backend-ecr" {
+  name = "${local.name}-ecr-repo"
+  force_delete = true
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
-resource "aws_s3_bucket" "lambda-bucket" {
-  bucket = "${local.name}-lambda-bucket"
+locals {
+  repo_url = aws_ecr_repository.backend-ecr.repository_url
 }
 
-resource "aws_s3_object" "s3-lambda-object" {
-  bucket = aws_s3_bucket.lambda-bucket.id
-  key = "divs_teller.zip"
-  source = data.archive_file.lambda-archive.output_path
-  etag = filemd5(data.archive_file.lambda-archive.output_path)
+resource "null_resource" "image" {
+  triggers = {
+    src = md5(join("-", [for x in fileset("..", "/backend/src/{*.py}") : filemd5("${path.cwd}/../${x}")]))
+    other = md5(join("-", [for x in fileset("..", "/backend/{*.txt, Dockerfile}") : filemd5("${path.cwd}/../${x}")]))
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      aws ecr get-login-password | docker login --username AWS --password-stdin ${local.repo_url}
+      docker build --platform linux/amd64 -t ${local.repo_url}:latest ../backend/.
+      docker push ${local.repo_url}:latest
+    EOF
+  }
+}
+
+data "aws_ecr_image" "latest" {
+  repository_name = aws_ecr_repository.backend-ecr.name
+  image_tag       = "latest"
+  depends_on      = [null_resource.image]
 }
 
 resource "aws_lambda_function" "lambda" {
+  depends_on = [null_resource.image, aws_ecr_repository.backend-ecr]
   function_name = "${local.name}-lambda-function"
-  s3_bucket = aws_s3_bucket.lambda-bucket.id
-  s3_key    = aws_s3_object.s3-lambda-object.key
-  runtime = "python3.9"
-  handler = "src.lambda_function.lambda_handler"
-  source_code_hash = data.archive_file.lambda-archive.output_base64sha256
+  image_uri     = "${aws_ecr_repository.backend-ecr.repository_url}:latest"
+  package_type  = "Image"
+  source_code_hash = trimprefix(data.aws_ecr_image.latest.id, "sha256:")
   role = aws_iam_role.lambda_exec.arn
   environment {
     variables = {
@@ -53,7 +68,42 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
+data "aws_iam_policy_document" "lambda_policy_document" {
+  statement {
+    actions = [
+      "dynamodb:*",
+    ]
+    resources = [
+      aws_dynamodb_table.db.arn
+    ]
+  }
+}
+
+resource "aws_iam_policy" "dynamodb_lambda_policy" {
+  name        = "dynamodb-lambda-policy"
+  description = "This policy will be used by the lambda to write get data from DynamoDB"
+  policy      = data.aws_iam_policy_document.lambda_policy_document.json
+}
+
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
   role = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  policy_arn = aws_iam_policy.dynamodb_lambda_policy.arn
+}
+
+resource "aws_lambda_function_url" "lambda_url" {
+  function_name      = aws_lambda_function.lambda.function_name
+  authorization_type = "NONE"
+
+  cors {
+    allow_credentials = true
+    allow_origins     = ["*"]
+    allow_methods     = ["*"]
+    allow_headers     = ["date", "keep-alive"]
+    expose_headers    = ["keep-alive", "date"]
+    max_age           = 86400
+  }
+}
+
+output "api_url" {
+  value = aws_lambda_function_url.lambda_url.function_url
 }

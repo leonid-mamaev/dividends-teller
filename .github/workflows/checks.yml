@@ -36,9 +36,7 @@ jobs:
           key: ${{ runner.os }}-pip-tests
       - run: |
           cd backend
-          pip install -r requirements.txt
-          pip install coverage responses
-      - run: |
-          cd backend
-          POLYGON_API_KEY=${{ secrets.POLYGON_API_KEY }} coverage run -m unittest tests/test_lambda.py
+          pip install -r requirements.txt   
+          pip install coverage responses          
+          coverage run -m unittest tests/test_*.py
           coverage report --fail-under=80  src/*.py

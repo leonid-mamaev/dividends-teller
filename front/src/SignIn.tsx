@@ -1,6 +1,8 @@
 import {FormEvent, useRef} from "react";
 import UserPool from "./UserPool";
 import {AuthenticationDetails, CognitoUser} from 'amazon-cognito-identity-js';
+import { FormLabel } from '@mui/material';
+import { TextField } from '@mui/material';
 
 
 function SignIn() {
@@ -31,10 +33,10 @@ function SignIn() {
     }
     return (
         <form onSubmit={onSubmit}>
-            <label htmlFor="email">Email</label>
-            <input ref={emailRef} type="email" id="email" />
-            <label htmlFor="password">Password</label>
-            <input ref={passwordRef} type="password" id="password" />
+            <FormLabel>Sign In</FormLabel>
+            <TextField ref={emailRef} type="email" id="email" label="Email" />
+            <FormLabel htmlFor="password">Password</FormLabel>
+            <TextField ref={passwordRef} type="password" id="password" />
             <button type="submit">Sign In</button>
         </form>
     )

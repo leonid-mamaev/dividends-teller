@@ -17,7 +17,6 @@ resource "aws_cognito_user_pool" "user_pool" {
     mutable                  = true
     name                     = "email"
     required                 = true
-
     string_attribute_constraints {
       min_length = 1
       max_length = 256
@@ -29,7 +28,7 @@ resource "aws_cognito_user_pool_client" "client" {
   name = "${local.name}-cognito-client"
   user_pool_id = aws_cognito_user_pool.user_pool.id
   generate_secret = false
-  refresh_token_validity = 90
+  refresh_token_validity = 30
   prevent_user_existence_errors = "ENABLED"
   explicit_auth_flows = [
     "ALLOW_REFRESH_TOKEN_AUTH",
@@ -37,10 +36,7 @@ resource "aws_cognito_user_pool_client" "client" {
     "ALLOW_ADMIN_USER_PASSWORD_AUTH",
     "ALLOW_USER_SRP_AUTH"
   ]
-  allowed_oauth_flows_user_pool_client = true
   supported_identity_providers = ["COGNITO"]
-  allowed_oauth_flows = ["implicit"]
-  allowed_oauth_scopes = ["openid"]
 }
 
 resource "aws_cognito_user_pool_domain" "cognito-domain" {
@@ -52,6 +48,7 @@ output "cognito_user_pool_id" {
   description = "Cognito user pool id."
   value = aws_cognito_user_pool.user_pool.id
 }
+
 output "cognito_client_id" {
   description = "Cognito client id."
   value = aws_cognito_user_pool_client.client.id

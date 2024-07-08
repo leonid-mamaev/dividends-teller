@@ -29,7 +29,7 @@ export function Tickers() {
                     <TableHead>
                         <TableRow>
                             <TableCell>Name</TableCell>
-                            <TableCell>Count</TableCell>
+                            <TableCell>Qty</TableCell>
                             <TableCell>Price Per Share</TableCell>
                             <TableCell>Divs Per Share</TableCell>
                             <TableCell>Yield</TableCell>
