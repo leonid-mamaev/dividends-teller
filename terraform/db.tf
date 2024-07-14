@@ -1,14 +1,24 @@
-resource "aws_dynamodb_table" "db" {
-  name = "${local.name}-db"
+resource "aws_dynamodb_table" "db_user_tickers" {
+  name = "${local.name}-user-tickers"
   billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "UserId"
-  range_key      = "Ticker"
+  hash_key       = "user_id"
+  range_key      = "ticker"
   attribute {
-    name = "UserId"
+    name = "user_id"
     type = "S"
   }
   attribute {
-    name = "Ticker"
+    name = "ticker"
+    type = "S"
+  }
+}
+
+resource "aws_dynamodb_table" "db_tickers_info" {
+  name = "${local.name}-tickers-info"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key      = "ticker"
+  attribute {
+    name = "ticker"
     type = "S"
   }
 }

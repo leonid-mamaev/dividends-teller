@@ -6,3 +6,8 @@ variable "polygon_api_key" {
   type     = string
   nullable = false
 }
+
+variable "aws_region" {
+  type     = string
+  nullable = false
+}

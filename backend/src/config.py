@@ -19,3 +19,13 @@ class ConfigPolygonApi:
     @staticmethod
     def get_host() -> str:
         return "https://api.polygon.io"
+
+
+class ConfigDb:
+    @staticmethod
+    def get_dynamodb_table_name_user_tickers() -> str:
+        return get_env_or_die("DYNAMODB_TABLE_USER_TICKERS")
+
+    @staticmethod
+    def get_dynamodb_table_name_tickers_info() -> str:
+        return get_env_or_die("DYNAMODB_TABLE_TICKERS_INFO")

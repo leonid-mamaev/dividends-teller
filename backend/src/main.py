@@ -1,9 +1,11 @@
 from dataclasses import dataclass, asdict
 import os
+from decimal import Decimal
+from typing import Annotated
 import uvicorn
-from fastapi import FastAPI
-from src.db import db_set_ticker, DynamoDbTickerRecord, db_delete_ticker, db_get_tickers
-from src.polygon_client import PolygonApi
+from dacite import from_dict
+from fastapi import FastAPI, Query
+from src.db import db_delete_user_stock, db_get_user_stocks, db_set_user_stock, db_get_stock_info
 from mangum import Mangum
 
 app = FastAPI()
@@ -15,45 +17,44 @@ def index():
 
 
 @dataclass
-class TickerInfo:
+class Stock:
     ticker: str
-    frequency: int
     name: str
-    close_price: float
+    price: Decimal
+    currency: str
+    div_payout_frequency: Decimal
+    div_payout_amount: Decimal
+    qty: Decimal
 
 
-@app.post("/div/{ticker}")
-def set_dividend(ticker: str, qty: float) -> TickerInfo:
-    next_div = PolygonApi.get_next_ticker_dividends(ticker)
-    ticker_details = PolygonApi.get_ticker_details(ticker)
-    prev_close_price = PolygonApi.get_ticker_prev_close_price(ticker)
-    record = DynamoDbTickerRecord(
+@app.get("/stocks")
+def get_stocks() -> list[Stock]:
+    result = []
+    user_stocks = db_get_user_stocks(user_id="1")
+    for stock in user_stocks:
+        stock_info = db_get_stock_info(stock.ticker)
+        result.append(from_dict(Stock, asdict(stock) | asdict(stock_info)))
+    return result
+
+
+@app.post("/stocks/{ticker}")
+def set_stock(ticker: str, qty: Annotated[float, Query(gt=0)]) -> Stock:
+    db_set_user_stock(user_id="1", ticker=ticker, qty=qty)
+    ticker_info = db_get_stock_info(ticker)
+    return Stock(
         ticker=ticker,
-        qty=qty,
-        price=prev_close_price,
-        payout_amount=next_div.cash_amount,
-        currency=ticker_details.currency_name,
-        payout_frequency=next_div.frequency,
-        payout_date=next_div.pay_date,
-    )
-    db_set_ticker(record=record)
-    return TickerInfo(
-        ticker=ticker,
-        frequency=record.payout_frequency,
-        name=ticker_details.name,
-        close_price=record.price,
+        qty=Decimal(qty),
+        name=ticker_info.name,
+        price=ticker_info.price,
+        currency=ticker_info.currency,
+        div_payout_frequency=ticker_info.div_payout_frequency,
+        div_payout_amount=ticker_info.div_payout_amount,
     )
 
 
-@app.delete("/div/{ticker}")
-def delete_dividend(ticker: str) -> None:
-    db_delete_ticker(ticker=ticker)
-
-
-@app.get("/divs")
-def get_dividends() -> list[TickerInfo]:
-    db_tickers = db_get_tickers()
-    return [TickerInfo(**asdict(item)) for item in db_tickers]
+@app.delete("/stocks/{ticker}")
+def delete_stock(ticker: str) -> None:
+    db_delete_user_stock(user_id="1", ticker=ticker)
 
 
 handler = Mangum(app, lifespan="off")

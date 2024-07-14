@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: pip install mypy
-      - run: cd backend && mypy src --install-types --non-interactive --ignore-missing-imports
+      - run: mypy backend --install-types --non-interactive --ignore-missing-imports
 
   check-code-formatting:
     runs-on: ubuntu-latest
@@ -38,5 +38,5 @@ jobs:
           cd backend
           pip install -r requirements.txt   
           pip install coverage responses          
-          coverage run -m unittest tests/test_*.py
+          POLYGON_API_KEY=test coverage run -m unittest tests/test_*.py
           coverage report --fail-under=80  src/*.py

@@ -39,8 +39,8 @@ resource "aws_cognito_user_pool_client" "client" {
   supported_identity_providers = ["COGNITO"]
 }
 
-resource "aws_cognito_user_pool_domain" "cognito-domain" {
-  domain = "divs-teller"
+resource "aws_cognito_user_pool_domain" "cognito_domain" {
+  domain = local.name
   user_pool_id = aws_cognito_user_pool.user_pool.id
 }
 

@@ -1,4 +1,4 @@
-resource "aws_ecr_repository" "backend-ecr" {
+resource "aws_ecr_repository" "backend_ecr" {
   name = "${local.name}-ecr-repo"
   force_delete = true
   image_scanning_configuration {
@@ -7,10 +7,10 @@ resource "aws_ecr_repository" "backend-ecr" {
 }
 
 locals {
-  repo_url = aws_ecr_repository.backend-ecr.repository_url
+  repo_url = aws_ecr_repository.backend_ecr.repository_url
 }
 
-resource "null_resource" "image" {
+resource "null_resource" "build_docker_image" {
   triggers = {
     src = md5(join("-", [for x in fileset("..", "/backend/src/{*.py}") : filemd5("${path.cwd}/../${x}")]))
     other = md5(join("-", [for x in fileset("..", "/backend/{*.txt, Dockerfile}") : filemd5("${path.cwd}/../${x}")]))
@@ -25,32 +25,34 @@ resource "null_resource" "image" {
   }
 }
 
-data "aws_ecr_image" "latest" {
-  repository_name = aws_ecr_repository.backend-ecr.name
+data "aws_ecr_image" "lambda_image" {
+  repository_name = aws_ecr_repository.backend_ecr.name
   image_tag       = "latest"
-  depends_on      = [null_resource.image]
+  depends_on      = [null_resource.build_docker_image]
 }
 
 resource "aws_lambda_function" "lambda" {
-  depends_on = [null_resource.image, aws_ecr_repository.backend-ecr]
+  depends_on = [null_resource.build_docker_image, aws_ecr_repository.backend_ecr]
   function_name = "${local.name}-lambda-function"
-  image_uri     = "${aws_ecr_repository.backend-ecr.repository_url}:latest"
+  image_uri     = "${aws_ecr_repository.backend_ecr.repository_url}:latest"
   package_type  = "Image"
-  source_code_hash = trimprefix(data.aws_ecr_image.latest.id, "sha256:")
-  role = aws_iam_role.lambda_exec.arn
+  source_code_hash = trimprefix(data.aws_ecr_image.lambda_image.id, "sha256:")
+  role = aws_iam_role.lambda_iam_role.arn
   environment {
     variables = {
       POLYGON_API_KEY = var.polygon_api_key
+      DYNAMODB_TABLE_USER_TICKERS = aws_dynamodb_table.db_user_tickers.name
+      DYNAMODB_TABLE_TICKERS_INFO = aws_dynamodb_table.db_tickers_info.name
     }
   }
 }
 
-resource "aws_cloudwatch_log_group" "divs-teller" {
+resource "aws_cloudwatch_log_group" "lambda_logs" {
   name = "/aws/lambda/${aws_lambda_function.lambda.function_name}"
   retention_in_days = 30
 }
 
-resource "aws_iam_role" "lambda_exec" {
+resource "aws_iam_role" "lambda_iam_role" {
   name = "${local.name}-lambda-role"
 
   assume_role_policy = jsonencode({
@@ -74,19 +76,20 @@ data "aws_iam_policy_document" "lambda_policy_document" {
       "dynamodb:*",
     ]
     resources = [
-      aws_dynamodb_table.db.arn
+      aws_dynamodb_table.db_tickers_info.arn,
+      aws_dynamodb_table.db_user_tickers.arn,
     ]
   }
 }
 
 resource "aws_iam_policy" "dynamodb_lambda_policy" {
   name        = "dynamodb-lambda-policy"
-  description = "This policy will be used by the lambda to write get data from DynamoDB"
+  description = "This policy is used by the lambda to access DynamoDB"
   policy      = data.aws_iam_policy_document.lambda_policy_document.json
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
-  role = aws_iam_role.lambda_exec.name
+  role = aws_iam_role.lambda_iam_role.name
   policy_arn = aws_iam_policy.dynamodb_lambda_policy.arn
 }
 

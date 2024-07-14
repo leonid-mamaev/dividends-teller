@@ -1,6 +1,7 @@
 import logging
 import unittest
 from pathlib import Path
+from time import time
 import responses
 from fastapi.testclient import TestClient
 from src.config import ConfigPolygonApi
@@ -25,13 +26,15 @@ def mock_polygon_api() -> None:
         }
     )
     responses.get(
-        f"{host}/v2/aggs/ticker/T/prev", status=200, json={"results": [{"c": 100}]}
+        f"{host}/v2/aggs/ticker/T/prev", status=200, json={"results": [{"c": 100, "t": time() * 1000}]}
     )
 
 
 def set_logging() -> None:
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger('boto3').setLevel(logging.WARNING)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
 
 
 class TestApi(unittest.TestCase):
@@ -49,24 +52,40 @@ class TestApi(unittest.TestCase):
         self.assertEqual({"msg": "Welcome to DivsTeller API"}, response.json())
 
     @responses.activate
-    def test_set_dividend(self):
+    def test_set_user_stock(self):
         mock_polygon_api()
-        response = self.client.post("/div/T?qty=10")
+        response = self.client.post("/stocks/T?qty=10")
         self.assertEqual(200, response.status_code)
         result = response.json()
-        self.assertEqual({'ticker': 'T', 'frequency': 1, 'name': 'AT&T', 'close_price': 100.0}, result)
+        expected = {
+            'ticker': 'T',
+            "currency": "usd",
+            'div_payout_frequency': "1",
+            'div_payout_amount': "100",
+            'name': 'AT&T',
+            'price': "100",
+            "qty": "10"
+        }
+        self.assertEqual(expected, result)
 
-    def test_delete_dividend(self):
-        response = self.client.delete("/div/T")
+    def test_delete_user_stock(self):
+        response = self.client.delete("/stocks/T")
         self.assertEqual(200, response.status_code)
 
-    def test_get_divs(self):
-        # mock_polygon_api()
-        response = self.client.get("/divs")
+    def test_get_user_stocks(self):
+        response = self.client.get("/stocks")
         self.assertEqual(200, response.status_code)
-        expected_response = {"ticker": "T", "frequency": 1, "name": "AT&T", "close_price": 100.0}
-        self.assertEqual(expected_response, response.json())
+        expected = {
+            'ticker': 'T',
+            "currency": "usd",
+            'div_payout_frequency': "1",
+            'div_payout_amount': "100",
+            'name': 'AT&T',
+            'price': "100",
+            "qty": "10"
+        }
+        self.assertEqual([expected], response.json())
 
-    def test_download_ticker_logo(self):
-        logo_path = PolygonApi.download_ticker_logo(ticker="T", path=Path(__file__).parent)
+    def test_download_stock_logo(self):
+        logo_path = PolygonApi.download_logo(ticker="T", path=Path(__file__).parent)
         self.assertTrue(logo_path.is_file())
