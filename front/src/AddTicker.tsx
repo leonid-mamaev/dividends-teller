@@ -1,21 +1,22 @@
-import {FormEvent, useRef} from "react";
-import {addDividend} from "./storage";
-import {api_get_ticker} from "./api";
+import {FormEvent, useRef, useState} from "react";
+import {api_set_ticker, Dividend} from "./api";
 
 
 interface AddTickerProps {
-    onAdd: () => void
+    onAdd: (dividend: Dividend) => void
 }
 
 export function AddTicker({onAdd}: AddTickerProps) {
+    const [loading, setLoading] = useState(false);
     const tickerRef = useRef<HTMLInputElement>(null)
-    const amountRef = useRef<HTMLInputElement>(null)
+    const qtyRef = useRef<HTMLInputElement>(null)
 
     const onSubmit = (e: FormEvent) => {
         e.preventDefault()
         const ticker = tickerRef.current!.value
-        const amount = amountRef.current!.value
-        api_get_ticker(ticker)
+        const qty = parseFloat(qtyRef.current!.value)
+        setLoading(true)
+        api_set_ticker(ticker, qty)
             .then((response) => {
                 if (response.ok) {
                     return response.json()
@@ -23,30 +24,36 @@ export function AddTicker({onAdd}: AddTickerProps) {
                 throw new Error('Something went wrong')
             })
             .then((data) => {
-                const dividend = {
+                const dividend: Dividend = {
                     ticker: ticker,
                     name: data.name,
-                    close_price: data.close_price,
-                    amount: parseFloat(amount),
-                    cash_amount: data.cash_amount,
+                    price: data.price,
+                    qty: data.qty,
+                    div_payout_amount: data.div_payout_amount,
                     currency: data.currency,
-                    frequency: data.frequency,
-                    pay_date: data.pay_date
+                    div_payout_frequency: data.div_payout_frequency,
+                    div_payout_date: data.div_payout_date
                 }
-                addDividend(dividend)
-                onAdd()
+                onAdd(dividend)
+                setLoading(false)
             })
             .catch((error) => {
                 alert(error)
                 console.error(error)
+                setLoading(false)
             })
     };
 
     return (
-        <form onSubmit={onSubmit}>
-            <input placeholder='Ticker' type='text' ref={tickerRef} />
-            <input placeholder='Amount' type='text' ref={amountRef} />
-            <button type='submit'>Submit</button>
-        </form>
+        <div>
+            {loading && <div>Loading data...</div>}
+            {!loading &&
+                <form onSubmit={onSubmit}>
+                    <input placeholder='Ticker' type='text' ref={tickerRef} />
+                    <input placeholder='Qty' type='text' ref={qtyRef} />
+                    <button type='submit'>Submit</button>
+                </form>
+            }
+        </div>
     )
 }

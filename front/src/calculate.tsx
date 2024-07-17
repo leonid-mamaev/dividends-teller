@@ -1,5 +1,5 @@
-import {Dividend} from "./storage";
+import {Dividend} from "./api";
 
 export function get_dividend_yearly_yield(dividend: Dividend): number {
-    return dividend.cash_amount * dividend.frequency / dividend.close_price * 100
+    return dividend.div_payout_amount * parseInt(dividend.div_payout_frequency) / dividend.price * 100
 }

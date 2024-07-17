@@ -43,6 +43,7 @@ resource "aws_lambda_function" "lambda" {
       POLYGON_API_KEY = var.polygon_api_key
       DYNAMODB_TABLE_USER_TICKERS = aws_dynamodb_table.db_user_tickers.name
       DYNAMODB_TABLE_TICKERS_INFO = aws_dynamodb_table.db_tickers_info.name
+      S3_BUCKET_NAME = aws_s3_bucket.frontend_bucket.bucket
     }
   }
 }
@@ -70,7 +71,7 @@ resource "aws_iam_role" "lambda_iam_role" {
   })
 }
 
-data "aws_iam_policy_document" "lambda_policy_document" {
+data "aws_iam_policy_document" "dynamodb_policy_document" {
   statement {
     actions = [
       "dynamodb:*",
@@ -85,12 +86,41 @@ data "aws_iam_policy_document" "lambda_policy_document" {
 resource "aws_iam_policy" "dynamodb_lambda_policy" {
   name        = "dynamodb-lambda-policy"
   description = "This policy is used by the lambda to access DynamoDB"
-  policy      = data.aws_iam_policy_document.lambda_policy_document.json
+  policy      = data.aws_iam_policy_document.dynamodb_policy_document.json
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_policy" {
+resource "aws_iam_role_policy_attachment" "dynamo_db_policy_attachment" {
   role = aws_iam_role.lambda_iam_role.name
   policy_arn = aws_iam_policy.dynamodb_lambda_policy.arn
+}
+
+data "aws_iam_policy_document" "frontend_bucket_policy_document" {
+  statement {
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "s3:GetObject",
+    ]
+    resources = [
+      "arn:aws:s3:::${aws_s3_bucket.frontend_bucket.id}/*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "frontend_bucket_lambda_policy" {
+  name        = "s3-lambda-policy"
+  description = "This policy is used by the lambda to access S3 Bucket"
+  policy      = data.aws_iam_policy_document.frontend_bucket_policy_document.json
+}
+
+resource "aws_iam_role_policy_attachment" "frontend_bucket_policy_attachment" {
+  role = aws_iam_role.lambda_iam_role.name
+  policy_arn = aws_iam_policy.frontend_bucket_lambda_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
+  role       = aws_iam_role.lambda_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_lambda_function_url" "lambda_url" {

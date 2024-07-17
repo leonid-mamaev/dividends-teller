@@ -29,3 +29,9 @@ class ConfigDb:
     @staticmethod
     def get_dynamodb_table_name_tickers_info() -> str:
         return get_env_or_die("DYNAMODB_TABLE_TICKERS_INFO")
+
+
+class ConfigS3:
+    @staticmethod
+    def get_s3_bucket_name() -> str:
+        return get_env_or_die("S3_BUCKET_NAME")

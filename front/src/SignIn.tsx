@@ -17,6 +17,8 @@ function SignIn() {
             Username: email,
             Password: password
         })
+        console.log(UserPool)
+        console.log(email)
         let cognitoUser = new CognitoUser({
             Username: email,
             Pool: UserPool,
@@ -33,12 +35,13 @@ function SignIn() {
     }
     return (
         <form onSubmit={onSubmit}>
-            <FormLabel>Sign In</FormLabel>
-            <TextField ref={emailRef} type="email" id="email" label="Email" />
-            <FormLabel htmlFor="password">Password</FormLabel>
-            <TextField ref={passwordRef} type="password" id="password" />
+            <label htmlFor="email">Email</label>
+            <input ref={emailRef} type="email" id="email"/>
+            <label htmlFor="password">Password</label>
+            <input ref={passwordRef} type="password" id="password"/>
             <button type="submit">Sign In</button>
         </form>
     )
 }
+
 export default SignIn

@@ -1,10 +1,11 @@
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
-import boto3
 from dacite import from_dict
+from src.aws_dynamodb import _get_dynamodb_items, _dynamodb_put_item, _dynamodb_delete_item, _get_dynamodb_item, \
+    DynamoDbItemNotFound
 from src.config import ConfigDb
-from src.polygon_client import PolygonApi
+from src.polygon_api import PolygonApi
 
 
 @dataclass
@@ -15,7 +16,7 @@ class DbUserStock:
 
 
 @dataclass
-class DbStockDivData:
+class DbStockDetails:
     ticker: str
     name: str
     price: Decimal
@@ -47,7 +48,7 @@ def db_delete_user_stock(user_id: str, ticker: str) -> None:
     _dynamodb_delete_item(table_name, key={"ticker": ticker, "user_id": user_id})
 
 
-def db_get_stock_info(ticker: str) -> DbStockDivData:
+def db_get_stock_details(ticker: str) -> DbStockDetails:
     logging.debug(f"Getting ticker info: {ticker}")
     table_name = ConfigDb.get_dynamodb_table_name_tickers_info()
     try:
@@ -55,13 +56,19 @@ def db_get_stock_info(ticker: str) -> DbStockDivData:
     except DynamoDbItemNotFound:
         db_populate_stock_info(ticker)
         data = _get_dynamodb_item(table_name=table_name, key={"ticker": ticker})
-    return from_dict(DbStockDivData, data)
+    return from_dict(DbStockDetails, data)
+
+
+def db_get_multiple_stocks_details(tickers: list[str]) -> dict[str, DbStockDetails]:
+    table_name = ConfigDb.get_dynamodb_table_name_tickers_info()
+    data = _get_dynamodb_items(table_name=table_name, key={"ticker": [item for item in tickers]})
+    return {item["ticker"]: from_dict(DbStockDetails, item) for item in data}
 
 
 def db_populate_stock_info(ticker: str) -> None:
-    logging.debug(f"Populating ticker info with PolygonAPI")
-    next_div = PolygonApi.get_next_ticker_dividends(ticker)
+    logging.debug(f"Populating ticker info with PolygonAPI: {ticker}")
     ticker_details = PolygonApi.get_ticker_details(ticker)
+    next_div = PolygonApi.get_next_ticker_dividends(ticker)
     prev_close_price = PolygonApi.get_ticker_prev_close_price(ticker)
     item = {
         "ticker": ticker,
@@ -76,38 +83,10 @@ def db_populate_stock_info(ticker: str) -> None:
     _dynamodb_put_item(table_name=ConfigDb.get_dynamodb_table_name_tickers_info(), item=item)
 
 
-def _get_aws_dynamodb_resource():
-    return boto3.resource("dynamodb")
-
-
-def _get_aws_dynamodb_table(table_name: str):
-    resource = _get_aws_dynamodb_resource()
-    return resource.Table(table_name)
-
-
-def _dynamodb_put_item(table_name: str, item: dict) -> None:
-    table = _get_aws_dynamodb_table(table_name)
-    table.put_item(Item=item)
-
-
-def _get_dynamodb_items(table_name: str, key: dict) -> list[dict]:
-    table = _get_aws_dynamodb_table(table_name)
-    result = table.scan()
-    return result["Items"]
-
-
-class DynamoDbItemNotFound(Exception):
-    pass
-
-
-def _get_dynamodb_item(table_name: str, key: dict) -> dict:
-    table = _get_aws_dynamodb_table(table_name)
-    result = table.get_item(Key=key)
-    if "Item" not in result:
-        raise DynamoDbItemNotFound(f"Item does not exist: {key}")
-    return result["Item"]
-
-
-def _dynamodb_delete_item(table_name: str, key: dict) -> None:
-    table = _get_aws_dynamodb_table(table_name)
-    table.delete_item(Key=key)
+def db_user_has_ticker(user_id: str, ticker: str) -> bool:
+    table_name = ConfigDb.get_dynamodb_table_name_user_tickers()
+    try:
+        _get_dynamodb_item(table_name=table_name, key={"user_id": user_id, "ticker": ticker})
+    except DynamoDbItemNotFound:
+        return False
+    return True

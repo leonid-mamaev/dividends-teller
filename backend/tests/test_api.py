@@ -6,7 +6,7 @@ import responses
 from fastapi.testclient import TestClient
 from src.config import ConfigPolygonApi
 from src.main import app
-from src.polygon_client import PolygonApi
+from src.polygon_api import PolygonApi
 
 
 def mock_polygon_api() -> None:
@@ -72,6 +72,10 @@ class TestApi(unittest.TestCase):
         response = self.client.delete("/stocks/T")
         self.assertEqual(200, response.status_code)
 
+    def test_should_fail_to_update_unknown_user_stock_qty(self):
+        response = self.client.put("/stocks/ABC?qty=10")
+        self.assertEqual(404, response.status_code)
+
     def test_get_user_stocks(self):
         response = self.client.get("/stocks")
         self.assertEqual(200, response.status_code)
@@ -87,5 +91,5 @@ class TestApi(unittest.TestCase):
         self.assertEqual([expected], response.json())
 
     def test_download_stock_logo(self):
-        logo_path = PolygonApi.download_logo(ticker="T", path=Path(__file__).parent)
-        self.assertTrue(logo_path.is_file())
+        response = self.client.get("/logo/O")
+        self.assertEqual(200, response.status_code)

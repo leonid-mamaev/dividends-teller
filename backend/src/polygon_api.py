@@ -1,14 +1,9 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from pathlib import Path
 import requests
 from dacite import from_dict
 from requests import Response
 from src.config import ConfigPolygonApi
-
-
-def get_polygon_api_headers() -> dict[str, str]:
-    return {"Authorization": f"Bearer {ConfigPolygonApi.get_api_key()}"}
 
 
 def polygon_api_request(
@@ -23,7 +18,7 @@ def polygon_api_request(
         url=f"{host}/{url}",
         method=method,
         params=params,
-        headers=get_polygon_api_headers(),
+        headers={"Authorization": f"Bearer {ConfigPolygonApi.get_api_key()}"},
     )
     response.raise_for_status()
     return response
@@ -41,12 +36,16 @@ class Branding:
     icon_url: str
     logo_url: str
 
+    @property
+    def logo_extension(self) -> str:
+        return self.logo_url.split(".")[-1]
+
 
 @dataclass
 class TickerDetails:
     name: str
     currency_name: str
-    branding: Branding
+    branding: Branding | None = None
 
 
 @dataclass
@@ -55,17 +54,20 @@ class TickerPrevClosePrice:
     close_date: date
 
 
+class PolygonApiError(Exception):
+    pass
+
+
 class PolygonApi:
 
     @staticmethod
     def get_next_ticker_dividends(ticker: str) -> NextTickerDivs:
-        response = polygon_api_request(
-            method="GET", url="v3/reference/dividends", params={"ticker": ticker}
-        )
+        params = {"ticker": ticker, "limit": 1}
+        response = polygon_api_request(method="GET", url="v3/reference/dividends", params=params)
         try:
             result = response.json()["results"][0]
         except IndexError:
-            raise ValueError(f"Ticker {ticker} dividends unknown")
+            raise PolygonApiError(f"Ticker dividends unknown: {ticker}")
         return from_dict(NextTickerDivs, result)
 
     @staticmethod
@@ -84,10 +86,9 @@ class PolygonApi:
         return from_dict(TickerDetails, result)
 
     @staticmethod
-    def download_logo(ticker: str, path: Path) -> Path:
+    def get_ticker_logo(ticker: str) -> bytes:
         ticker_branding = PolygonApi.get_ticker_details(ticker).branding
+        if ticker_branding is None:
+            raise PolygonApiError(f"Ticker branding not found: {ticker} ")
         response = polygon_api_request(method="GET", host=ticker_branding.logo_url)
-        file_extension = ticker_branding.logo_url.split(".")[-1]
-        file_path = path / f"{ticker.lower()}.{file_extension}"
-        file_path.write_bytes(response.content)
-        return file_path
+        return response.content
