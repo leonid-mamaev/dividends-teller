@@ -21,7 +21,7 @@ resource "aws_apigatewayv2_integration" "api_gateway_lambda_integration" {
   integration_type = "AWS_PROXY"
 }
 
-resource "aws_apigatewayv2_route" "api_gateway_route" {
+resource "aws_apigatewayv2_route" "api_gateway_route_default" {
   api_id = aws_apigatewayv2_api.api_gateway.id
   route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.api_gateway_lambda_integration.id}"
@@ -29,12 +29,17 @@ resource "aws_apigatewayv2_route" "api_gateway_route" {
   authorization_type = "JWT"
 }
 
-# resource "aws_apigatewayv2_route" "api_gateway_route_options" {
-#   api_id = aws_apigatewayv2_api.api_gateway.id
-#   route_key = "/proxy+"
-#   integration_method = "OPTIONS"
-#   target    = "integrations/${aws_apigatewayv2_integration.api_gateway_lambda_integration.id}"
-# }
+resource "aws_apigatewayv2_route" "api_gateway_route_logo" {
+  api_id = aws_apigatewayv2_api.api_gateway.id
+  route_key = "GET /logo/{ticker}"
+  target    = "integrations/${aws_apigatewayv2_integration.api_gateway_lambda_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "api_gateway_route_options" {
+  api_id = aws_apigatewayv2_api.api_gateway.id
+  route_key = "OPTIONS /{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.api_gateway_lambda_integration.id}"
+}
 
 resource "aws_lambda_permission" "api_gateway_lambda_permission" {
   statement_id  = "AllowExecutionFromAPIGateway"

@@ -1,7 +1,7 @@
 requests
-python-dotenv
 fastapi
+pydantic
+pydantic-settings
 boto3
-dacite
 mangum
 uvicorn

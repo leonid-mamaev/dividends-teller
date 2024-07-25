@@ -30,7 +30,7 @@ resource "aws_s3_bucket_website_configuration" "frontend_website_config" {
     suffix = "index.html"
   }
   error_document {
-    key = "error.html"
+    key = "index.html"
   }
 }
 
@@ -48,7 +48,23 @@ locals {
   }
 }
 
+
+resource "null_resource" "build_frontend" {
+  triggers = {
+    src = md5(join("-", [for x in fileset("..", "/front/src/**") : filemd5("${path.cwd}/../${x}")]))
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      npm --prefix ../front run build
+      rm -rf ./frontend_build
+      mv ../front/build ./frontend_build
+    EOF
+  }
+}
+
 resource "aws_s3_object" "frontend_bucket_objects" {
+  depends_on = [null_resource.build_frontend]
   for_each = fileset("./frontend_build/", "**/*.*")
   bucket = aws_s3_bucket.frontend_bucket.id
   key = each.value

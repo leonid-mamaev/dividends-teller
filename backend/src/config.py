@@ -1,37 +1,15 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-
-def get_env_or_die(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        raise RuntimeError(f"Env param not provided: {name}")
-    return value
+from pathlib import Path
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class ConfigPolygonApi:
-    @staticmethod
-    def get_api_key() -> str:
-        return get_env_or_die("POLYGON_API_KEY")
-
-    @staticmethod
-    def get_host() -> str:
-        return "https://api.polygon.io"
-
-
-class ConfigDb:
-    @staticmethod
-    def get_dynamodb_table_name_user_tickers() -> str:
-        return get_env_or_die("DYNAMODB_TABLE_USER_TICKERS")
-
-    @staticmethod
-    def get_dynamodb_table_name_tickers_info() -> str:
-        return get_env_or_die("DYNAMODB_TABLE_TICKERS_INFO")
+class Config(BaseSettings):
+    model_config = SettingsConfigDict(env_file=Path(__file__).parent / '.env')
+    polygon_api_key: str = Field(alias="POLYGON_API_KEY")
+    polygon_api_host: str = "https://api.polygon.io"
+    bucket_name: str = Field(validation_alias="S3_BUCKET_NAME")
+    dynamodb_table_user_tickers: str = Field(alias="DYNAMODB_TABLE_USER_TICKERS")
+    dynamodb_table_name_tickers_data: str = Field(alias="DYNAMODB_TABLE_TICKERS_INFO")
 
 
-class ConfigS3:
-    @staticmethod
-    def get_s3_bucket_name() -> str:
-        return get_env_or_die("S3_BUCKET_NAME")
+config = Config()

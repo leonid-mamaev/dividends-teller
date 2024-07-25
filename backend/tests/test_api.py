@@ -1,16 +1,14 @@
 import logging
 import unittest
-from pathlib import Path
 from time import time
 import responses
 from fastapi.testclient import TestClient
-from src.config import ConfigPolygonApi
+from src.config import config
 from src.main import app
-from src.polygon_api import PolygonApi
 
 
 def mock_polygon_api() -> None:
-    host = ConfigPolygonApi.get_host()
+    host = config.polygon_api_host
     responses.get(
         f"{host}/v3/reference/dividends?ticker=T",
         status=200,

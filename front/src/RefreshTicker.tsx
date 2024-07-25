@@ -1,7 +1,7 @@
 // import {addDividend, deleteDiv} from "./storage";
 import IconButton from '@mui/material/IconButton';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import {api_set_ticker} from "./api";
+import {apiSetTicker} from "./api";
 
 interface Props {
     ticker: string

@@ -1,9 +1,8 @@
-from dataclasses import dataclass
 from datetime import date, datetime
 import requests
-from dacite import from_dict
+from pydantic import BaseModel
 from requests import Response
-from src.config import ConfigPolygonApi
+from src.config import config
 
 
 def polygon_api_request(
@@ -13,26 +12,24 @@ def polygon_api_request(
     params: dict | None = None,
 ) -> Response:
     if not host:
-        host = ConfigPolygonApi.get_host()
+        host = config.polygon_api_host
     response = requests.request(
         url=f"{host}/{url}",
         method=method,
         params=params,
-        headers={"Authorization": f"Bearer {ConfigPolygonApi.get_api_key()}"},
+        headers={"Authorization": f"Bearer {config.polygon_api_key}"},
     )
     response.raise_for_status()
     return response
 
 
-@dataclass
-class NextTickerDivs:
+class NextTickerDivs(BaseModel):
     frequency: int
     cash_amount: float
     pay_date: str
 
 
-@dataclass
-class Branding:
+class Branding(BaseModel):
     icon_url: str
     logo_url: str
 
@@ -41,17 +38,15 @@ class Branding:
         return self.logo_url.split(".")[-1]
 
 
-@dataclass
-class TickerDetails:
+class TickerDetails(BaseModel):
     name: str
     currency_name: str
     branding: Branding | None = None
 
 
-@dataclass
-class TickerPrevClosePrice:
+class TickerPrevClosePrice(BaseModel):
     price: float
-    close_date: date
+    close_date: datetime
 
 
 class PolygonApiError(Exception):
@@ -68,7 +63,7 @@ class PolygonApi:
             result = response.json()["results"][0]
         except IndexError:
             raise PolygonApiError(f"Ticker dividends unknown: {ticker}")
-        return from_dict(NextTickerDivs, result)
+        return NextTickerDivs(**result)
 
     @staticmethod
     def get_ticker_prev_close_price(ticker: str) -> TickerPrevClosePrice:
@@ -83,7 +78,7 @@ class PolygonApi:
     def get_ticker_details(ticker: str) -> TickerDetails:
         response = polygon_api_request(method="GET", url=f"v3/reference/tickers/{ticker}")
         result = response.json()["results"]
-        return from_dict(TickerDetails, result)
+        return TickerDetails(**result)
 
     @staticmethod
     def get_ticker_logo(ticker: str) -> bytes:

@@ -1,5 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import {apiDeleteTicker} from "./api";
 
 
@@ -8,11 +9,11 @@ interface Props {
     onDelete: (ticker: string) => void
 }
 
-export function DeleteTicker({onDelete, ticker}: Props) {
+export function DeleteTicker({ticker, onDelete}: Props) {
 
     const handleClick = () => {
         apiDeleteTicker(ticker)
-            .then((value) => {
+            .then(() => {
                 onDelete(ticker)
             })
             .catch((error) => {
@@ -21,8 +22,10 @@ export function DeleteTicker({onDelete, ticker}: Props) {
     };
 
     return (
-        <IconButton aria-label="delete" onClick={handleClick}>
-            <DeleteIcon />
-        </IconButton>
+        <Tooltip title="Delete" placement="right">
+            <IconButton aria-label="delete" onClick={handleClick}>
+                <DeleteIcon />
+            </IconButton>
+        </Tooltip>
     )
 }

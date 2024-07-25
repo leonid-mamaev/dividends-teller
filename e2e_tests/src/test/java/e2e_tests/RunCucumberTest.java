@@ -1,4 +1,4 @@
-package hellocucumber;
+package e2e_tests;
 
 import org.junit.platform.suite.api.ConfigurationParameter;
 import org.junit.platform.suite.api.IncludeEngines;
